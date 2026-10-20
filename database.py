@@ -1,5 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy import URL
+from sqlalchemy.orm import Session
+from sqlalchemy.orm import sessionmaker
 from os import getenv
 from dotenv import load_dotenv
 
@@ -14,6 +16,7 @@ database = URL.create(
     password=getenv("DATABASE_PASSWORD")
 )
 engine = create_engine(database)
+SessionDB = sessionmaker(engine)
 
 def get_connection():
     con = engine.connect()
@@ -21,3 +24,7 @@ def get_connection():
         yield con
     finally:
         con.close()
+
+def get_session():
+    with SessionDB() as session:
+        yield session
