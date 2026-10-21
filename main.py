@@ -1,7 +1,10 @@
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, HTTPException
 from typing import Annotated
+
+from psycopg.types import none
+
 from database import get_connection
-from sqlalchemy import text, Connection
+from sqlalchemy import text, Connection, select
 from sqlalchemy.orm import Session
 from schemas import TaskCreate, TaskResponse
 from database import get_session
@@ -25,3 +28,15 @@ def create_task(task: TaskCreate, session: Annotated[Session,Depends(get_session
     session.commit()
     session.refresh(new_task)
     return new_task
+
+@app.get("/tasks", response_model=list[TaskResponse])
+def list_tasks(session: Annotated[Session,Depends(get_session)]):
+    tasks = session.scalars(select(Task).order_by(Task.id)).all()
+    return tasks
+
+@app.get("/tasks/{task_id}", response_model=TaskResponse)
+def get_task(task_id: int, session: Annotated[Session,Depends(get_session)]):
+    task = session.get(Task, task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Tarefa não encontrada")
+    return task
